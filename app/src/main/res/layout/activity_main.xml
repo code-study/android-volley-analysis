@@ -15,7 +15,13 @@
         android:id="@+id/button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New Button" />
+        android:text="request" />
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Volley-Demo" />
 
     <ImageView
         android:id="@+id/imageView"
