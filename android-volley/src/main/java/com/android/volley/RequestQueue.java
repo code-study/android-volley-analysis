@@ -89,6 +89,12 @@ public class RequestQueue {
 
     /**
      * 需要进行网络访问的请求队列
+     * block阻塞型,
+     * 当队列为null取时以及满了以后添加时,都会阻塞,知道可以有东西取,或者可以有空间往里添加
+     * 好处就是为空时等,阻塞在这里,线程里的while(true)就不会一直循环了
+     * 看名字还知道有一个priority即优先级感念,需要队列内的对象继承comparable方法复写优先级比较规则,
+     * 队列是相当于一个线程池的, 加入优先级的概念可以很好的控制各种类型请求的执行优先
+     *
      * The queue of requests that are actually going out to the network.
      */
     private final PriorityBlockingQueue<Request<?>> mNetworkQueue = new PriorityBlockingQueue<Request<?>>();
@@ -155,8 +161,8 @@ public class RequestQueue {
      * @param threadPoolSize Number of network dispatcher threads to create
      */
     public RequestQueue(Cache cache, Network network, int threadPoolSize) {
-        this(cache, network, threadPoolSize,
-                new ExecutorDelivery(new Handler(Looper.getMainLooper())));
+        //传递一个与主线程的Looper关联的一个Handler
+        this(cache, network, threadPoolSize, new ExecutorDelivery(new Handler(Looper.getMainLooper())));
     }
 
     /**
@@ -176,12 +182,12 @@ public class RequestQueue {
     public void start() {
         stop();  // Make sure any currently running dispatchers are stopped.
         // Create the cache dispatcher and start it.
-        // 创建启动缓存调度器
+        // 缓存调度器
         mCacheDispatcher = new CacheDispatcher(mCacheQueue, mNetworkQueue, mCache, mDelivery);
         mCacheDispatcher.start();
 
         // Create network dispatchers (and corresponding threads) up to the pool size.
-        // 创建和启动网络调度器
+        // 网络请求调度器
         for (int i = 0; i < mDispatchers.length; i++) {
             NetworkDispatcher networkDispatcher = new NetworkDispatcher(mNetworkQueue, mNetwork, mCache, mDelivery);
             mDispatchers[i] = networkDispatcher;

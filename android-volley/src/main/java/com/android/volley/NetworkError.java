@@ -18,6 +18,7 @@ package com.android.volley;
 
 /**
  * Indicates that there was a network error when performing a Volley request.
+ * 网络错误
  */
 @SuppressWarnings("serial")
 public class NetworkError extends VolleyError {

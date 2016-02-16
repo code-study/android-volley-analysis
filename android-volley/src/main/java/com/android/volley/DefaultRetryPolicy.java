@@ -20,25 +20,39 @@ package com.android.volley;
  * Default retry policy for requests.
  */
 public class DefaultRetryPolicy implements RetryPolicy {
-    /** The current timeout in milliseconds. */
+    /**
+     * The current timeout in milliseconds.
+     */
     private int mCurrentTimeoutMs;
 
-    /** The current retry count. */
+    /**
+     * The current retry count.
+     */
     private int mCurrentRetryCount;
 
-    /** The maximum number of attempts. */
+    /**
+     * The maximum number of attempts.
+     */
     private final int mMaxNumRetries;
 
-    /** The backoff multiplier for the policy. */
+    /**
+     * The backoff multiplier for the policy.
+     */
     private final float mBackoffMultiplier;
 
-    /** The default socket timeout in milliseconds */
+    /**
+     * The default socket timeout in milliseconds
+     */
     public static final int DEFAULT_TIMEOUT_MS = 2500;
 
-    /** The default number of retries */
+    /**
+     * The default number of retries
+     */
     public static final int DEFAULT_MAX_RETRIES = 0;
 
-    /** The default backoff multiplier */
+    /**
+     * The default backoff multiplier
+     */
     public static final float DEFAULT_BACKOFF_MULT = 1f;
 
 
@@ -46,14 +60,16 @@ public class DefaultRetryPolicy implements RetryPolicy {
      * Constructs a new retry policy using the default timeouts.
      */
     public DefaultRetryPolicy() {
+        // 第一个代表超时时间：即超过DEFAULT_TIMEOUT_MSS认为超时，第三个参数代表最大重试次数，这里设置为1.0f代表如果超时，则不重试
         this(DEFAULT_TIMEOUT_MS, DEFAULT_MAX_RETRIES, DEFAULT_BACKOFF_MULT);
     }
 
     /**
      * Constructs a new retry policy.
-     * @param initialTimeoutMs The initial timeout for the policy.
-     * @param maxNumRetries The maximum number of retries.
-     * @param backoffMultiplier Backoff multiplier for the policy.
+     *
+     * @param initialTimeoutMs  The initial timeout for the policy. 超时时间
+     * @param maxNumRetries     The maximum number of retries. 最大重试次数
+     * @param backoffMultiplier Backoff multiplier for the policy. 设置为1.0f代表如果超时，则不重试
      */
     public DefaultRetryPolicy(int initialTimeoutMs, int maxNumRetries, float backoffMultiplier) {
         mCurrentTimeoutMs = initialTimeoutMs;
@@ -86,6 +102,7 @@ public class DefaultRetryPolicy implements RetryPolicy {
 
     /**
      * Prepares for the next retry by applying a backoff to the timeout.
+     *
      * @param error The error code of the last attempt.
      */
     @Override

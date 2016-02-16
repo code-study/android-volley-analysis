@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import java.util.concurrent.BlockingQueue;
 
 /**
+ * 网络请求调度器
  * Provides a thread for performing network dispatch from a queue of requests.
  * <p/>
  * Requests added to the specified queue are processed from the network via a
@@ -63,9 +64,7 @@ public class NetworkDispatcher extends Thread {
      * @param cache    Cache interface to use for writing responses to cache
      * @param delivery Delivery interface to use for posting responses
      */
-    public NetworkDispatcher(BlockingQueue<Request<?>> queue,
-                             Network network, Cache cache,
-                             ResponseDelivery delivery) {
+    public NetworkDispatcher(BlockingQueue<Request<?>> queue, Network network, Cache cache, ResponseDelivery delivery) {
         mQueue = queue;
         mNetwork = network;
         mCache = cache;
@@ -147,6 +146,8 @@ public class NetworkDispatcher extends Thread {
 
                 // Post the response back.
                 request.markDelivered();
+
+                //处理响应结果
                 mDelivery.postResponse(request, response);
             } catch (VolleyError volleyError) {
                 volleyError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);

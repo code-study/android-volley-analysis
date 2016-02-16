@@ -22,13 +22,18 @@ import java.util.concurrent.Executor;
 
 /**
  * Delivers responses and errors.
+ * 用于分发错误error或者响应数据response;
+ * 使用Executor类,通常与主线程挂钩
  */
 public class ExecutorDelivery implements ResponseDelivery {
-    /** Used for posting responses, typically to the main thread. */
+    /**
+     * Used for posting responses, typically to the main thread.
+     */
     private final Executor mResponsePoster;
 
     /**
      * Creates a new response delivery interface.
+     *
      * @param handler {@link Handler} to post responses on
      */
     public ExecutorDelivery(final Handler handler) {
@@ -36,6 +41,7 @@ public class ExecutorDelivery implements ResponseDelivery {
         mResponsePoster = new Executor() {
             @Override
             public void execute(Runnable command) {
+                //传入的Handler与主线程绑定了，所以操作在主线程中
                 handler.post(command);
             }
         };
@@ -44,6 +50,7 @@ public class ExecutorDelivery implements ResponseDelivery {
     /**
      * Creates a new response delivery interface, mockable version
      * for testing.
+     *
      * @param executor For running delivery tasks
      */
     public ExecutorDelivery(Executor executor) {
@@ -113,6 +120,6 @@ public class ExecutorDelivery implements ResponseDelivery {
             if (mRunnable != null) {
                 mRunnable.run();
             }
-       }
+        }
     }
 }

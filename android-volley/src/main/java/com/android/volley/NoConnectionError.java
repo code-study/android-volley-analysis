@@ -18,6 +18,7 @@ package com.android.volley;
 
 /**
  * Error indicating that no connection could be established when performing a Volley request.
+ * 网络连接错误
  */
 @SuppressWarnings("serial")
 public class NoConnectionError extends NetworkError {

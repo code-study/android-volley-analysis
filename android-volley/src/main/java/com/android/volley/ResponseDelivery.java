@@ -16,6 +16,10 @@
 
 package com.android.volley;
 
+/**
+ * delivery : 传送，投递
+ * 解析从网络或缓存中返回的响应结果，并将解析结果交付给请求发起者
+ */
 public interface ResponseDelivery {
     /**
      * Parses a response from the network or cache and delivers it.
@@ -30,6 +34,7 @@ public interface ResponseDelivery {
 
     /**
      * Posts an error for the given request.
+     * 请求失败时将结果提交给请求发起者
      */
     public void postError(Request<?> request, VolleyError error);
 }

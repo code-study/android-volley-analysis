@@ -167,6 +167,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         mUrl = url;
         mIdentifier = createIdentifier(method, url);
         mErrorListener = listener;
+
+        // 设置超时和重试请求
         setRetryPolicy(new DefaultRetryPolicy());
 
         mDefaultTrafficStatsTag = findDefaultTrafficStatsTag(url);
@@ -231,6 +233,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /**
      * Sets the retry policy for this request.
+     * 设置超时和重试请求
      *
      * @return This Request object to allow for chaining.
      */
@@ -388,6 +391,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Returns a list of extra HTTP headers to go along with this request. Can
      * throw {@link AuthFailureError} as authentication may be required to
      * provide these values.
+     * <p/>
+     * 添加自己的自定义头部
      *
      * @throws AuthFailureError In the event of auth failure
      */

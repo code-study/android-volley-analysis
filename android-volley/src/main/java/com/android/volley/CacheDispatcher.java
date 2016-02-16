@@ -21,6 +21,7 @@ import android.os.Process;
 import java.util.concurrent.BlockingQueue;
 
 /**
+ * 缓存调度器
  * Provides a thread for performing cache triage on a queue of requests.
  * <p/>
  * Requests added to the specified cache queue are resolved from cache.

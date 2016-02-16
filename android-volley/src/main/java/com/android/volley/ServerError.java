@@ -18,6 +18,7 @@ package com.android.volley;
 
 /**
  * Indicates that the server responded with an error response.
+ * 服务端错误
  */
 @SuppressWarnings("serial")
 public class ServerError extends VolleyError {
