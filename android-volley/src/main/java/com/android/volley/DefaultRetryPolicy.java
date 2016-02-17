@@ -46,7 +46,8 @@ public class DefaultRetryPolicy implements RetryPolicy {
 
     /**
      * The default socket timeout in milliseconds
-     * 默认的超时时间2.5s((表示每一次重试耗费掉的时间的总和))
+     * 默认的超时时间2.5s
+     * 默认请求连接和读取的时间是2.5s
      */
     public static final int DEFAULT_TIMEOUT_MS = 2500;
 

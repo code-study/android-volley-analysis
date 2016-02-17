@@ -54,12 +54,17 @@ import java.util.TreeMap;
 /**
  * A network performing Volley requests over an {@link HttpStack}.
  * 网络请求，装饰HttpStack
+ * 执行请求的一个具体过程
  */
 public class BasicNetwork implements Network {
     protected static final boolean DEBUG = VolleyLog.DEBUG;
-
+    /**
+     * 对于缓慢的请求定义了一个请求时间
+     */
     private static int SLOW_REQUEST_THRESHOLD_MS = 3000;
-
+    /**
+     * 用于以后的获取网络数据
+     */
     private static int DEFAULT_POOL_SIZE = 4096;
 
     protected final HttpStack mHttpStack;
@@ -77,7 +82,7 @@ public class BasicNetwork implements Network {
 
     /**
      * @param httpStack HTTP stack to be used
-     * @param pool      a buffer pool that improves GC performance in copy operations
+     * @param pool      a buffer pool that improves GC performance in copy operations 用于获取数据而建立的对象
      */
     public BasicNetwork(HttpStack httpStack, ByteArrayPool pool) {
         mHttpStack = httpStack;
@@ -86,20 +91,30 @@ public class BasicNetwork implements Network {
 
     @Override
     public NetworkResponse performRequest(Request<?> request) throws VolleyError {
+        //获取请求开始的时间 debug用的
         long requestStart = SystemClock.elapsedRealtime();
 
         while (true) {
             HttpResponse httpResponse = null;
-            byte[] responseContents = null;
-            Map<String, String> responseHeaders = Collections.emptyMap();
-            try {
-                // Gather headers.
-                Map<String, String> headers = new HashMap<String, String>();
-                addCacheHeaders(headers, request.getCacheEntry());
-                httpResponse = mHttpStack.performRequest(request, headers);
-                StatusLine statusLine = httpResponse.getStatusLine();
-                int statusCode = statusLine.getStatusCode();
 
+            //请求内容对象
+            byte[] responseContents = null;
+            //用于保存响应数据报的Header中的数据
+            Map<String, String> responseHeaders = Collections.emptyMap();
+
+            try {
+                // Gather headers. 保存缓存下来的Header
+                Map<String, String> headers = new HashMap<String, String>();
+                // 添加请求头部的过程
+                addCacheHeaders(headers, request.getCacheEntry());
+                // 执行请求
+                httpResponse = mHttpStack.performRequest(request, headers);
+
+                //获取响应状态
+                StatusLine statusLine = httpResponse.getStatusLine();
+                //响应状态码
+                int statusCode = statusLine.getStatusCode();
+                //获取响应后的Header中的所有数据
                 responseHeaders = convertHeaders(httpResponse.getAllHeaders());
 
                 // Handle cache validation.
@@ -131,16 +146,22 @@ public class BasicNetwork implements Network {
                 } else {
                     // Add 0 byte response as a way of honestly representing a
                     // no-content request.
+                    //由于204响应时不返回数据信息的,返回空数据
                     responseContents = new byte[0];
                 }
 
                 // if the request is slow, log it.
                 long requestLifetime = SystemClock.elapsedRealtime() - requestStart;
+                //如果一个请求的时间超过了指定的缓慢请求时间，那么需要显示这个时间,debug
                 logSlowRequests(requestLifetime, request, responseContents, statusLine);
 
+                //如果请求状态出现错误,bug
+                //if (statusCode != HttpStatus.SC_OK && statusCode != HttpStatus.SC_NO_CONTENT) {
                 if (statusCode < 200 || statusCode > 299) {
                     throw new IOException();
                 }
+
+                // 返回header+body数据
                 return new NetworkResponse(statusCode, responseContents, responseHeaders, false, SystemClock.elapsedRealtime() - requestStart);
 
             } catch (SocketTimeoutException e) {
@@ -169,7 +190,9 @@ public class BasicNetwork implements Network {
                 if (responseContents != null) {
                     networkResponse = new NetworkResponse(statusCode, responseContents, responseHeaders, false, SystemClock.elapsedRealtime() - requestStart);
 
+                    //请求需要进行验证，或者是需要授权异常处理
                     if (statusCode == HttpStatus.SC_UNAUTHORIZED || statusCode == HttpStatus.SC_FORBIDDEN) {
+                        //尝试重试策略方法
                         attemptRetryOnException("auth", request, new AuthFailureError(networkResponse));
 
                     } else if (statusCode == HttpStatus.SC_MOVED_PERMANENTLY || statusCode == HttpStatus.SC_MOVED_TEMPORARILY) {
@@ -204,35 +227,45 @@ public class BasicNetwork implements Network {
     /**
      * Attempts to prepare the request for a retry. If there are no more attempts remaining in the
      * request's retry policy, a timeout exception is thrown.
+     * 尝试重试策略方法
      *
      * @param request The request to use.
      */
-    private static void attemptRetryOnException(String logPrefix, Request<?> request,
-                                                VolleyError exception) throws VolleyError {
+    private static void attemptRetryOnException(String logPrefix, Request<?> request, VolleyError exception) throws VolleyError {
+        //获取请求的重试策略
         RetryPolicy retryPolicy = request.getRetryPolicy();
         int oldTimeout = request.getTimeoutMs();
 
         try {
+            //重试方式执行
             retryPolicy.retry(exception);
         } catch (VolleyError e) {
-            request.addMarker(
-                    String.format("%s-timeout-giveup [timeout=%s]", logPrefix, oldTimeout));
+            request.addMarker(String.format("%s-timeout-giveup [timeout=%s]", logPrefix, oldTimeout));
             throw e;
         }
         request.addMarker(String.format("%s-retry [timeout=%s]", logPrefix, oldTimeout));
     }
 
+    /**
+     * 添加请求的请求头部，从缓存当中获取头部信息添加到这次请求
+     *
+     * @param headers
+     * @param entry
+     */
     private void addCacheHeaders(Map<String, String> headers, Cache.Entry entry) {
         // If there's no cache entry, we're done.
+        //缓存数据为空
         if (entry == null) {
             return;
         }
 
+        //返回新鲜度验证标志
         if (entry.etag != null) {
             headers.put("If-None-Match", entry.etag);
         }
 
         if (entry.lastModified > 0) {
+            //返回请求——响应的时间
             Date refTime = new Date(entry.lastModified);
             headers.put("If-Modified-Since", DateUtils.formatDate(refTime));
         }
@@ -245,16 +278,21 @@ public class BasicNetwork implements Network {
 
     /**
      * Reads the contents of HttpEntity into a byte[].
+     * 从HttpEntity中获取返回的内容数据
      */
     private byte[] entityToBytes(HttpEntity entity) throws IOException, ServerError {
-        PoolingByteArrayOutputStream bytes =
-                new PoolingByteArrayOutputStream(mPool, (int) entity.getContentLength());
+        //这个流采用了字节回收机制，可以减少内存的分配和回收
+        PoolingByteArrayOutputStream bytes = new PoolingByteArrayOutputStream(mPool, (int) entity.getContentLength());
+        //缓冲字节
         byte[] buffer = null;
+
         try {
+            //将Entity中保存的内容封装成流
             InputStream in = entity.getContent();
             if (in == null) {
                 throw new ServerError();
             }
+            //缓冲流分配
             buffer = mPool.getBuf(1024);
             int count;
             while ((count = in.read(buffer)) != -1) {
@@ -277,6 +315,7 @@ public class BasicNetwork implements Network {
 
     /**
      * Converts Headers[] to Map<String, String>.
+     * 将所有的Header数据获取并保存在map集合当中
      */
     protected static Map<String, String> convertHeaders(Header[] headers) {
         Map<String, String> result = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);

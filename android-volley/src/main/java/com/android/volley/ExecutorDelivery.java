@@ -24,10 +24,14 @@ import java.util.concurrent.Executor;
  * Delivers responses and errors.
  * 用于分发错误error或者响应数据response;
  * 使用Executor类,通常与主线程挂钩
+ * 采用线程池的方式对响应进行发送
  */
 public class ExecutorDelivery implements ResponseDelivery {
     /**
      * Used for posting responses, typically to the main thread.
+     * Executor使用线程池来管理线程，可以重复利用已经创建出来的线程而不是每次都必须新创建线程，节省了一部分的开销。
+     * 线程池也可以很方便的管理线程的大小和当前在执行的线程数量。
+     * 线程池
      */
     private final Executor mResponsePoster;
 
@@ -41,7 +45,7 @@ public class ExecutorDelivery implements ResponseDelivery {
         mResponsePoster = new Executor() {
             @Override
             public void execute(Runnable command) {
-                //传入的Handler与主线程绑定了，所以操作在主线程中
+                //传入的Handler与主线程绑定了，所以分发消息是在主线程中
                 handler.post(command);
             }
         };
@@ -82,8 +86,17 @@ public class ExecutorDelivery implements ResponseDelivery {
      */
     @SuppressWarnings("rawtypes")
     private class ResponseDeliveryRunnable implements Runnable {
+        /**
+         * 请求
+         */
         private final Request mRequest;
+        /**
+         * 响应
+         */
         private final Response mResponse;
+        /**
+         * 其他线程
+         */
         private final Runnable mRunnable;
 
         public ResponseDeliveryRunnable(Request request, Response response, Runnable runnable) {
@@ -96,27 +109,34 @@ public class ExecutorDelivery implements ResponseDelivery {
         @Override
         public void run() {
             // If this request has canceled, finish it and don't deliver.
+            // 如果请求被中断，那么就不需要发送响应了
             if (mRequest.isCanceled()) {
                 mRequest.finish("canceled-at-delivery");
                 return;
             }
 
             // Deliver a normal response or error, depending.
+            // 如果服务器响应成功，中途没有错误的发生
             if (mResponse.isSuccess()) {
+                // 将服务器返回的结果发送给客户端
                 mRequest.deliverResponse(mResponse.result);
             } else {
+                // 把错误发送给客户端
                 mRequest.deliverError(mResponse.error);
             }
 
             // If this is an intermediate response, add a marker, otherwise we're done
             // and the request can be finished.
+            // 中间响应
             if (mResponse.intermediate) {
                 mRequest.addMarker("intermediate-response");
             } else {
+                //请求结束
                 mRequest.finish("done");
             }
 
             // If we have been provided a post-delivery runnable, run it.
+            // 启动附加线程
             if (mRunnable != null) {
                 mRunnable.run();
             }

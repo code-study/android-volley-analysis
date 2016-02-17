@@ -18,7 +18,7 @@ package com.android.volley;
 
 /**
  * delivery : 传送，投递
- * 解析从网络或缓存中返回的响应结果，并将解析结果交付给请求发起者
+ * 解析从网络或缓存中返回的响应结果，并将解析结果分发
  */
 public interface ResponseDelivery {
     /**

@@ -24,20 +24,22 @@ import java.util.Map;
 
 /**
  * Data and headers returned from {@link Network#performRequest(Request)}.
+ * 对服务器的响应的结果封装
  */
-public class NetworkResponse implements Serializable{
+public class NetworkResponse implements Serializable {
     private static final long serialVersionUID = -20150728102000L;
 
     /**
      * Creates a new network response.
-     * @param statusCode the HTTP status code
-     * @param data Response body
-     * @param headers Headers returned with this response, or null for none
-     * @param notModified True if the server returned a 304 and the data was already in cache
+     *
+     * @param statusCode    the HTTP status code
+     * @param data          Response body
+     * @param headers       Headers returned with this response, or null for none
+     * @param notModified   True if the server returned a 304 and the data was already in cache
      * @param networkTimeMs Round-trip network time to receive network response
      */
     public NetworkResponse(int statusCode, byte[] data, Map<String, String> headers,
-            boolean notModified, long networkTimeMs) {
+                           boolean notModified, long networkTimeMs) {
         this.statusCode = statusCode;
         this.data = data;
         this.headers = headers;
@@ -46,7 +48,7 @@ public class NetworkResponse implements Serializable{
     }
 
     public NetworkResponse(int statusCode, byte[] data, Map<String, String> headers,
-            boolean notModified) {
+                           boolean notModified) {
         this(statusCode, data, headers, notModified, 0);
     }
 
@@ -58,19 +60,30 @@ public class NetworkResponse implements Serializable{
         this(HttpStatus.SC_OK, data, headers, false, 0);
     }
 
-    /** The HTTP status code. */
+    /**
+     * The HTTP status code.
+     */
     public final int statusCode;
 
-    /** Raw data from this response. */
+    /**
+     * Raw data from this response.
+     */
     public final byte[] data;
 
-    /** Response headers. */
+    /**
+     * Response headers.
+     */
     public final Map<String, String> headers;
 
-    /** True if the server returned a 304 (Not Modified). */
+    /**
+     * True if the server returned a 304 (Not Modified).
+     * 304响应的判断
+     */
     public final boolean notModified;
 
-    /** Network roundtrip time in milliseconds. */
+    /**
+     * Network roundtrip time in milliseconds.
+     */
     public final long networkTimeMs;
 }
 

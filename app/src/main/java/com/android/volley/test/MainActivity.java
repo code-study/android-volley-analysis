@@ -26,7 +26,8 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                request("http://www.baidu.com");
+//                request("http://www.baidu.com");
+                request("http://openapi.weshare12.com/api/v1/weshare/resort/photos");
             }
         });
     }

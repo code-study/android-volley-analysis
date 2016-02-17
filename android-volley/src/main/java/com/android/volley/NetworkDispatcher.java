@@ -36,22 +36,27 @@ import java.util.concurrent.BlockingQueue;
 public class NetworkDispatcher extends Thread {
     /**
      * The queue of requests to service.
+     * 请求队列
      */
     private final BlockingQueue<Request<?>> mQueue;
     /**
      * The network interface for processing requests.
+     * 网络请求对象，用于执行网络请求工作
      */
     private final Network mNetwork;
     /**
      * The cache to write to.
+     * 缓存对象，用于缓存数据
      */
     private final Cache mCache;
     /**
      * For posting responses and errors.
+     * 用于分发请求
      */
     private final ResponseDelivery mDelivery;
     /**
      * Used for telling us to die.
+     * 用于关闭线程
      */
     private volatile boolean mQuit = false;
 
@@ -113,7 +118,7 @@ public class NetworkDispatcher extends Thread {
 
                 // If the request was cancelled already, do not perform the
                 // network request.
-                // 取消请求
+                // 如果请求被中途取消
                 if (request.isCanceled()) {
                     request.finish("network-discard-cancelled");
                     continue;
@@ -136,6 +141,7 @@ public class NetworkDispatcher extends Thread {
                 }
 
                 // Parse the response here on the worker thread.
+                // 解析响应数据
                 Response<?> response = request.parseNetworkResponse(networkResponse);
                 request.addMarker("network-parse-complete");
 
@@ -148,9 +154,10 @@ public class NetworkDispatcher extends Thread {
                 }
 
                 // Post the response back.
+                //确认请求要被分发
                 request.markDelivered();
 
-                //处理响应结果
+                //发送请求
                 mDelivery.postResponse(request, response);
             } catch (VolleyError volleyError) {
                 volleyError.setNetworkTimeMs(SystemClock.elapsedRealtime() - startTimeMs);
