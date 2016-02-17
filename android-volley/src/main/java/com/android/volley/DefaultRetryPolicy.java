@@ -22,36 +22,43 @@ package com.android.volley;
 public class DefaultRetryPolicy implements RetryPolicy {
     /**
      * The current timeout in milliseconds.
+     * 超时时间
      */
     private int mCurrentTimeoutMs;
 
     /**
      * The current retry count.
+     * 重试次数
      */
     private int mCurrentRetryCount;
 
     /**
      * The maximum number of attempts.
+     * 允许重试的最大次数
      */
     private final int mMaxNumRetries;
 
     /**
      * The backoff multiplier for the policy.
+     * 一个乘数因子，每次超时时间的获取都需要乘上这个乘数因子
      */
     private final float mBackoffMultiplier;
 
     /**
      * The default socket timeout in milliseconds
+     * 默认的超时时间2.5s((表示每一次重试耗费掉的时间的总和))
      */
     public static final int DEFAULT_TIMEOUT_MS = 2500;
 
     /**
      * The default number of retries
+     * 默认的最大重试次数
      */
     public static final int DEFAULT_MAX_RETRIES = 0;
 
     /**
      * The default backoff multiplier
+     * 默认的乘数因子
      */
     public static final float DEFAULT_BACKOFF_MULT = 1f;
 
@@ -107,8 +114,11 @@ public class DefaultRetryPolicy implements RetryPolicy {
      */
     @Override
     public void retry(VolleyError error) throws VolleyError {
+        //记录超过了允许的次数
         mCurrentRetryCount++;
+        //记录超时的时间
         mCurrentTimeoutMs += (mCurrentTimeoutMs * mBackoffMultiplier);
+
         if (!hasAttemptRemaining()) {
             throw error;
         }

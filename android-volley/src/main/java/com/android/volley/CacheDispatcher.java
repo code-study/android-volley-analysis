@@ -21,7 +21,7 @@ import android.os.Process;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * 缓存调度器
+ * 缓存请求线程
  * Provides a thread for performing cache triage on a queue of requests.
  * <p/>
  * Requests added to the specified cache queue are resolved from cache.
@@ -36,26 +36,31 @@ public class CacheDispatcher extends Thread {
 
     /**
      * The queue of requests coming in for triage.
+     * 缓存请求队列
      */
     private final BlockingQueue<Request<?>> mCacheQueue;
 
     /**
      * The queue of requests going out to the network.
+     * 网络请求队列
      */
     private final BlockingQueue<Request<?>> mNetworkQueue;
 
     /**
      * The cache to read from.
+     * 缓存，用于保存缓存数据
      */
     private final Cache mCache;
 
     /**
      * For posting responses.
+     * 用于分发请求
      */
     private final ResponseDelivery mDelivery;
 
     /**
      * Used for telling us to die.
+     * 用于判断线程是否结束
      */
     private volatile boolean mQuit = false;
 
@@ -80,6 +85,7 @@ public class CacheDispatcher extends Thread {
     /**
      * Forces this dispatcher to quit immediately.  If any requests are still in
      * the queue, they are not guaranteed to be processed.
+     * 退出线程
      */
     public void quit() {
         mQuit = true;
@@ -92,6 +98,7 @@ public class CacheDispatcher extends Thread {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
         // Make a blocking call to initialize the cache.
+        // 初始化缓存
         mCache.initialize();
 
         Request<?> request;
@@ -100,6 +107,7 @@ public class CacheDispatcher extends Thread {
             request = null;
             try {
                 // Take a request from the queue.
+                // 从缓存队列中取出请求
                 request = mCacheQueue.take();
             } catch (InterruptedException e) {
                 // We may have been interrupted because it was time to quit.
@@ -133,6 +141,7 @@ public class CacheDispatcher extends Thread {
 
                 // If it is completely expired, just send it to the network.
                 // 缓存了，但是过期了，则将请求加入mNetworkQueue队列中来进行一次网络访问
+                // 判断缓存的新鲜度
                 if (entry.isExpired()) {
                     request.addMarker("cache-hit-expired");
                     request.setCacheEntry(entry);
@@ -146,7 +155,7 @@ public class CacheDispatcher extends Thread {
                 Response<?> response = request.parseNetworkResponse(new NetworkResponse(entry.data, entry.responseHeaders));
                 request.addMarker("cache-hit-parsed");
 
-                //判断是否是软过期
+                //判断缓存是需要刷新
                 if (!entry.refreshNeeded()) {
                     // Completely unexpired cache hit. Just deliver the response.
                     // 缓存没有Soft-expired，则直接通过mDelivery将解析好的结果交付给请求发起者
@@ -164,6 +173,7 @@ public class CacheDispatcher extends Thread {
                     // Post the intermediate response back to the user and have
                     // the delivery then forward the request along to the network.
                     final Request<?> finalRequest = request;
+                    //需要刷新,那么就再次提交网络请求...获取服务器的响应...
                     mDelivery.postResponse(request, response, new Runnable() {
                         @Override
                         public void run() {

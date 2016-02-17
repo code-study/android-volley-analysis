@@ -91,6 +91,7 @@ public class NetworkDispatcher extends Thread {
     @Override
     public void run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+
         Request<?> request;
         while (true) {
             long startTimeMs = SystemClock.elapsedRealtime();
@@ -122,12 +123,14 @@ public class NetworkDispatcher extends Thread {
                 addTrafficStatsTag(request);
 
                 // Perform the network request.
+                // 请求数据
                 NetworkResponse networkResponse = mNetwork.performRequest(request);
                 request.addMarker("network-http-complete");
 
                 // If the server returned 304 AND we delivered a response already,
                 // we're done -- don't deliver a second identical response.
                 if (networkResponse.notModified && request.hasHadResponseDelivered()) {
+                    //如果是相同的请求，那么服务器就返回一次响应
                     request.finish("not-modified");
                     continue;
                 }
@@ -138,8 +141,8 @@ public class NetworkDispatcher extends Thread {
 
                 // Write to cache if applicable.
                 // TODO: Only update cache metadata instead of entire record for 304s.
-                // 缓存数据
                 if (request.shouldCache() && response.cacheEntry != null) {
+                    // 缓存数据
                     mCache.put(request.getCacheKey(), response.cacheEntry);
                     request.addMarker("network-cache-written");
                 }
@@ -161,6 +164,12 @@ public class NetworkDispatcher extends Thread {
         }
     }
 
+    /**
+     * 解析请求或者是分发请求时出现错误
+     *
+     * @param request
+     * @param error
+     */
     private void parseAndDeliverNetworkError(Request<?> request, VolleyError error) {
         error = request.parseNetworkError(error);
         mDelivery.postError(request, error);

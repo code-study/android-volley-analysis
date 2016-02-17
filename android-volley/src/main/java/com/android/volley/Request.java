@@ -244,6 +244,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /**
      * Adds an event to this request's event log; for debugging.
+     * 为每一个request添加相应事件标识符,主要用于调试
      */
     public void addMarker(String tag) {
         if (MarkerLog.ENABLED) {
@@ -257,10 +258,14 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * <p>Also dumps all events from this request's event log; for debugging.</p>
      */
     void finish(final String tag) {
+
+        //请求完成之后,将请求队列中的这次请求进行移除操作
         if (mRequestQueue != null) {
             mRequestQueue.finish(this);
             onFinish();
         }
+
+        //日志文件
         if (MarkerLog.ENABLED) {
             final long threadId = Thread.currentThread().getId();
             if (Looper.myLooper() != Looper.getMainLooper()) {
@@ -517,6 +522,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /**
      * Converts <code>params</code> into an application/x-www-form-urlencoded encoded string.
+     * 将参数转化成 postid=4868291&update=1 这样的形式
      */
     private byte[] encodeParameters(Map<String, String> params, String paramsEncoding) {
         StringBuilder encodedParams = new StringBuilder();

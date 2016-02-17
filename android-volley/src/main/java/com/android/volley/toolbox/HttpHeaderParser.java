@@ -31,6 +31,9 @@ import java.util.Map;
 public class HttpHeaderParser {
 
     /**
+     * 根据不同缓存方式,获取计算出超过缓存时间,即过期时间点的毫秒值,
+     * 然后保存到缓存元数据Cache.Entry对象类中
+     * <p/>
      * Extracts a {@link Cache.Entry} from a {@link NetworkResponse}.
      *
      * @param response The network response to parse headers from
@@ -58,6 +61,11 @@ public class HttpHeaderParser {
         if (headerValue != null) {
             serverDate = parseDateAsEpoch(headerValue);
         }
+        // http的请求是有自己的缓存处理的,即请求头里的"cache-control"或者"Expires"参数用于控制缓存
+        // 简单介绍下,cache-control主要分两种
+        // 1.无缓存,no-cache/must-revalidate等,即每次请求都是获取新数据
+        // 2.指定缓存时间,max-age=5,值的单位为秒
+        // Expires为指定缓存到指定之间
 
         headerValue = headers.get("Cache-Control");
         if (headerValue != null) {
@@ -82,7 +90,7 @@ public class HttpHeaderParser {
                 }
             }
         }
-
+        // Expires为指定缓存到指定之间
         headerValue = headers.get("Expires");
         if (headerValue != null) {
             serverExpires = parseDateAsEpoch(headerValue);
@@ -136,7 +144,7 @@ public class HttpHeaderParser {
     /**
      * Retrieve a charset from headers
      *
-     * @param headers An {@link java.util.Map} of headers
+     * @param headers        An {@link java.util.Map} of headers
      * @param defaultCharset Charset to return if none can be found
      * @return Returns the charset specified in the Content-Type of this header,
      * or the defaultCharset if none can be found.
