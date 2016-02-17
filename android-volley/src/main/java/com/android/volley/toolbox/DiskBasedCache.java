@@ -111,6 +111,7 @@ public class DiskBasedCache implements Cache {
 
     /**
      * Clears the cache. Deletes all cached files from disk.
+     * 清空所有的文件缓存,释放内存
      */
     @Override
     public synchronized void clear() {
@@ -136,12 +137,17 @@ public class DiskBasedCache implements Cache {
             return null;
         }
 
+        //返回键值对应的缓存文件
         File file = getFileForKey(key);
         CountingInputStream cis = null;
         try {
+            //封装成流
             cis = new CountingInputStream(new BufferedInputStream(new FileInputStream(file)));
             CacheHeader.readHeader(cis); // eat header
+
+            //读取数据
             byte[] data = streamToBytes(cis, (int) (file.length() - cis.bytesRead));
+            //返回entry中保存的数据
             return entry.toCacheEntry(data);
         } catch (IOException e) {
             VolleyLog.d("%s: %s", file.getAbsolutePath(), e.toString());
@@ -285,8 +291,11 @@ public class DiskBasedCache implements Cache {
      * @return A pseudo-unique filename.
      */
     private String getFilenameForKey(String key) {
+        //获取名字长度的一半
         int firstHalfLength = key.length() / 2;
+        //对文件名字符串进行截取
         String localFilename = String.valueOf(key.substring(0, firstHalfLength).hashCode());
+        //获取其Hash码
         localFilename += String.valueOf(key.substring(firstHalfLength).hashCode());
         return localFilename;
     }
@@ -327,7 +336,7 @@ public class DiskBasedCache implements Cache {
             Map.Entry<String, CacheHeader> entry = iterator.next();
             CacheHeader e = entry.getValue();
 
-            //删除原本的文件名...对文件名进行优化
+            //删除原本的文件名...对文件名进行优化,优化的也仅仅是文件名字的长度
             boolean deleted = getFileForKey(e.key).delete();
             if (deleted) {
                 //设置数据减小的长度
@@ -401,6 +410,7 @@ public class DiskBasedCache implements Cache {
 
     /**
      * Handles holding onto the cache headers for an entry.
+     * 对缓存数据的一个打包过程
      */
     // Visible for testing.
     static class CacheHeader {
@@ -412,16 +422,19 @@ public class DiskBasedCache implements Cache {
 
         /**
          * The key that identifies the cache entry.
+         * 缓存的键值
          */
         public String key;
 
         /**
          * ETag for cache coherence.
+         * 新鲜度验证
          */
         public String etag;
 
         /**
          * Date of this response as reported by the server.
+         * 响应过程中花费的时间
          */
         public long serverDate;
 
@@ -432,16 +445,19 @@ public class DiskBasedCache implements Cache {
 
         /**
          * TTL for this record.
+         * 缓存过期时间
          */
         public long ttl;
 
         /**
          * Soft TTL for this record.
+         * 缓存的新鲜时间
          */
         public long softTtl;
 
         /**
          * Headers from the response resulting in this cache entry.
+         * 保存响应头部信息的map
          */
         public Map<String, String> responseHeaders;
 
