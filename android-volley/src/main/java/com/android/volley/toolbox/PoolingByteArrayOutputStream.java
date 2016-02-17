@@ -22,14 +22,19 @@ import java.io.IOException;
 /**
  * A variation of {@link java.io.ByteArrayOutputStream} that uses a pool of byte[] buffers instead
  * of always allocating them fresh, saving on heap churn.
+ * 通过缓冲buf来作为缓冲机制，如果缓存的空间不足，那么需要new一个更大数量级的buf来作为缓冲机制，这样会增加内存的分配个释放的过程；
+ * PoolingByteArrayOutputStream实现了回收机制，可以对Byte进行回收和再次利用，减少了频繁分配内存和释放的操作
  */
 public class PoolingByteArrayOutputStream extends ByteArrayOutputStream {
     /**
      * If the {@link #PoolingByteArrayOutputStream(ByteArrayPool)} constructor is called, this is
      * the default size to which the underlying byte array is initialized.
+     * 缓冲池的默认字节大小
      */
     private static final int DEFAULT_SIZE = 256;
-
+    /**
+     * 定义比特回收池对象
+     */
     private final ByteArrayPool mPool;
 
     /**
@@ -46,13 +51,17 @@ public class PoolingByteArrayOutputStream extends ByteArrayOutputStream {
      * expand.
      *
      * @param size initial size for the underlying byte array. The value will be pinned to a default
-     *        minimum size.
+     *             minimum size.
      */
     public PoolingByteArrayOutputStream(ByteArrayPool pool, int size) {
         mPool = pool;
         buf = mPool.getBuf(Math.max(size, DEFAULT_SIZE));
     }
 
+    /**
+     * 释放内存,关闭
+     * @throws IOException
+     */
     @Override
     public void close() throws IOException {
         mPool.returnBuf(buf);
@@ -60,6 +69,9 @@ public class PoolingByteArrayOutputStream extends ByteArrayOutputStream {
         super.close();
     }
 
+    /**
+     * 返回一个缓冲池
+     */
     @Override
     public void finalize() {
         mPool.returnBuf(buf);
@@ -67,6 +79,7 @@ public class PoolingByteArrayOutputStream extends ByteArrayOutputStream {
 
     /**
      * Ensures there is enough space in the buffer for the given number of additional bytes.
+     * 确保在缓存有足够大的空间来满足给定的字节大小,扩充大小
      */
     private void expand(int i) {
         /* Can the buffer handle @i more bytes, if not expand it */

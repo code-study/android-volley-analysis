@@ -48,7 +48,9 @@ import javax.net.ssl.SSLSocketFactory;
  * An {@link HttpStack} based on {@link HttpURLConnection}.
  */
 public class HurlStack implements HttpStack {
-
+    /**
+     * Header内容的类型
+     */
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
 
     /**
@@ -58,11 +60,18 @@ public class HurlStack implements HttpStack {
         /**
          * Returns a URL to use instead of the provided one, or null to indicate
          * this URL should not be used at all.
+         * 重写一个url
          */
         public String rewriteUrl(String originalUrl);
     }
 
+    /**
+     * url重写对象
+     */
     private final UrlRewriter mUrlRewriter;
+    /**
+     * 用于Https请求
+     */
     private final SSLSocketFactory mSslSocketFactory;
 
     public HurlStack() {
@@ -77,7 +86,7 @@ public class HurlStack implements HttpStack {
     }
 
     /**
-     * @param urlRewriter Rewriter to use for request URLs
+     * @param urlRewriter      Rewriter to use for request URLs
      * @param sslSocketFactory SSL factory to use for HTTPS connections
      */
     public HurlStack(UrlRewriter urlRewriter, SSLSocketFactory sslSocketFactory) {
@@ -89,9 +98,13 @@ public class HurlStack implements HttpStack {
     public HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)
             throws IOException, AuthFailureError {
         String url = request.getUrl();
+
+        //参数
         HashMap<String, String> map = new HashMap<String, String>();
         map.putAll(request.getHeaders());
         map.putAll(additionalHeaders);
+
+        //目前没有使用到,对url进行重写，重写的好处使url更加的保密，安全
         if (mUrlRewriter != null) {
             String rewritten = mUrlRewriter.rewriteUrl(url);
             if (rewritten == null) {
@@ -99,14 +112,23 @@ public class HurlStack implements HttpStack {
             }
             url = rewritten;
         }
+
         URL parsedUrl = new URL(url);
+        // 建立连接
         HttpURLConnection connection = openConnection(parsedUrl, request);
+        // 设置请求的相关属性
         for (String headerName : map.keySet()) {
             connection.addRequestProperty(headerName, map.get(headerName));
         }
+
+        //请求的方式去执行相关的方法
         setConnectionParametersForRequest(connection, request);
+
         // Initialize HttpResponse with data from the HttpURLConnection.
+        //获取协议版本
         ProtocolVersion protocolVersion = new ProtocolVersion("HTTP", 1, 1);
+
+        //响应码
         int responseCode = connection.getResponseCode();
 
         // responseCode＝401就会抛出IOException
@@ -118,10 +140,13 @@ public class HurlStack implements HttpStack {
             // Signal to the caller that something was wrong with the connection.
             throw new IOException("Could not retrieve response code from HttpUrlConnection.");
         }
-        StatusLine responseStatus = new BasicStatusLine(protocolVersion, connection.getResponseCode(), connection.getResponseMessage());
 
+        //响应信息
+        StatusLine responseStatus = new BasicStatusLine(protocolVersion, connection.getResponseCode(), connection.getResponseMessage());
+        //响应状态
         BasicHttpResponse response = new BasicHttpResponse(responseStatus);
 
+        //获取响应中的实体
         if (hasResponseBody(request.getMethod(), responseStatus.getStatusCode())) {
             response.setEntity(entityFromConnection(connection));
         }
@@ -137,20 +162,23 @@ public class HurlStack implements HttpStack {
 
     /**
      * Checks if a response message contains a body.
-     * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.3">RFC 7230 section 3.3</a>
+     *
      * @param requestMethod request method
-     * @param responseCode response status code
+     * @param responseCode  response status code
      * @return whether the response has a body
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.3">RFC 7230 section 3.3</a>
      */
     private static boolean hasResponseBody(int requestMethod, int responseCode) {
         return requestMethod != Request.Method.HEAD
-            && !(HttpStatus.SC_CONTINUE <= responseCode && responseCode < HttpStatus.SC_OK)
-            && responseCode != HttpStatus.SC_NO_CONTENT
-            && responseCode != HttpStatus.SC_NOT_MODIFIED;
+                && !(HttpStatus.SC_CONTINUE <= responseCode
+                && responseCode < HttpStatus.SC_OK)
+                && responseCode != HttpStatus.SC_NO_CONTENT
+                && responseCode != HttpStatus.SC_NOT_MODIFIED;
     }
 
     /**
      * Initializes an {@link HttpEntity} from the given {@link HttpURLConnection}.
+     *
      * @param connection
      * @return an HttpEntity populated with data from <code>connection</code>.
      */
@@ -162,10 +190,15 @@ public class HurlStack implements HttpStack {
         } catch (IOException ioe) {
             inputStream = connection.getErrorStream();
         }
+        //实体的内容
         entity.setContent(inputStream);
+        //实体的长度
         entity.setContentLength(connection.getContentLength());
+        //实体的编码
         entity.setContentEncoding(connection.getContentEncoding());
+        //获取响应中的实体
         entity.setContentType(connection.getContentType());
+
         return entity;
     }
 
@@ -178,6 +211,7 @@ public class HurlStack implements HttpStack {
 
     /**
      * Opens an {@link HttpURLConnection} with parameters.
+     *
      * @param url
      * @return an open connection
      * @throws IOException
@@ -193,15 +227,24 @@ public class HurlStack implements HttpStack {
 
         // use caller-provided custom SslSocketFactory, if any, for HTTPS
         if ("https".equals(url.getProtocol()) && mSslSocketFactory != null) {
-            ((HttpsURLConnection)connection).setSSLSocketFactory(mSslSocketFactory);
+            //创建一个Https连接
+            ((HttpsURLConnection) connection).setSSLSocketFactory(mSslSocketFactory);
         }
 
         return connection;
     }
 
+    /**
+     * 请求设置连接方式
+     *
+     * @param connection
+     * @param request
+     * @throws IOException
+     * @throws AuthFailureError
+     */
     @SuppressWarnings("deprecation")
     /* package */ static void setConnectionParametersForRequest(HttpURLConnection connection,
-            Request<?> request) throws IOException, AuthFailureError {
+                                                                Request<?> request) throws IOException, AuthFailureError {
         switch (request.getMethod()) {
             case Method.DEPRECATED_GET_OR_POST:
                 // This is the deprecated way that needs to be handled for backwards compatibility.
@@ -255,6 +298,14 @@ public class HurlStack implements HttpStack {
         }
     }
 
+    /**
+     * 如果一个请求存在实体数据，那么需要为其加上请求数据
+     *
+     * @param connection
+     * @param request
+     * @throws IOException
+     * @throws AuthFailureError
+     */
     private static void addBodyIfExists(HttpURLConnection connection, Request<?> request)
             throws IOException, AuthFailureError {
         byte[] body = request.getBody();
