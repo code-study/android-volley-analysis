@@ -18,6 +18,7 @@ package com.android.volley;
 
 /**
  * Encapsulates a parsed response for delivery.
+ * 分发响应解析响应的数据
  *
  * @param <T> Parsed type of this response
  */

@@ -592,6 +592,15 @@ public class DiskBasedCache implements Cache {
         return b;
     }
 
+    /**
+     * 因为不同的平台int long等，他们的字节存储的顺序可能是不一样的。
+     * 可能低位在前或者高位在前。
+     * writeInt() 和 readInt()以字节为单位，用一致的顺序读写，就能适配不同的平台。
+     *
+     * @param os
+     * @param n
+     * @throws IOException
+     */
     static void writeInt(OutputStream os, int n) throws IOException {
         os.write((n >> 0) & 0xff);
         os.write((n >> 8) & 0xff);

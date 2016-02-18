@@ -94,6 +94,7 @@ public class BasicNetwork implements Network {
         //获取请求开始的时间 debug用的
         long requestStart = SystemClock.elapsedRealtime();
 
+        //如果发生超时，认证失败等错误，进行重试操作，直到成功、抛出异常(不满足重试策略等)结束
         while (true) {
             HttpResponse httpResponse = null;
 

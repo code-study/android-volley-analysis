@@ -127,6 +127,7 @@ public class DefaultRetryPolicy implements RetryPolicy {
 
     /**
      * Returns true if this policy has attempts remaining, false otherwise.
+     * 判断是否超出重试次数
      */
     protected boolean hasAttemptRemaining() {
         return mCurrentRetryCount <= mMaxNumRetries;

@@ -24,7 +24,7 @@ import java.util.Map;
 
 /**
  * Data and headers returned from {@link Network#performRequest(Request)}.
- * 对服务器的响应的结果封装
+ * 对服务器的响应的结果封装:数据+head
  */
 public class NetworkResponse implements Serializable {
     private static final long serialVersionUID = -20150728102000L;
