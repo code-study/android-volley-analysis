@@ -36,7 +36,7 @@ public interface HttpStack {
      *
      * @param request the request to perform
      * @param additionalHeaders additional headers to be sent together with
-     *         {@link Request#getHeaders()}
+     *         {@link Request#getHeaders()} 额外的head(request也包含head)
      * @return the HTTP response
      */
     public HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)

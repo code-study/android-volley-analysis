@@ -99,7 +99,7 @@ public class HurlStack implements HttpStack {
             throws IOException, AuthFailureError {
         String url = request.getUrl();
 
-        //参数
+        //添加head:请求head+额外的head
         HashMap<String, String> map = new HashMap<String, String>();
         map.putAll(request.getHeaders());
         map.putAll(additionalHeaders);
@@ -131,7 +131,7 @@ public class HurlStack implements HttpStack {
         //响应码
         int responseCode = connection.getResponseCode();
 
-        // responseCode＝401就会抛出IOException
+        // 有的接口返回401，connection.getResponseCode(responseCode＝401)就会抛出IOException
         // 解决方案 : http://blog.csdn.net/kufeiyun/article/details/44646145
         // http://stackoverflow.com/questions/30476584/android-volley-strange-error-with-http-code-401-java-io-ioexception-no-authe
 
@@ -227,7 +227,7 @@ public class HurlStack implements HttpStack {
 
         // use caller-provided custom SslSocketFactory, if any, for HTTPS
         if ("https".equals(url.getProtocol()) && mSslSocketFactory != null) {
-            //创建一个Https连接
+            //设置自定义SSL Https连接
             ((HttpsURLConnection) connection).setSSLSocketFactory(mSslSocketFactory);
         }
 
@@ -250,6 +250,8 @@ public class HurlStack implements HttpStack {
                 // This is the deprecated way that needs to be handled for backwards compatibility.
                 // If the request's post body is null, then the assumption is that the request is
                 // GET.  Otherwise, it is assumed that the request is a POST.
+                //这是一个过时的的方法为了向后兼容。如果请求的body为空，那么请求就是GET请求；否则这个请求就是POST请求
+                //HttpURLConnection 的默认值是GET,可以不用设置，所以没有else
                 byte[] postBody = request.getPostBody();
                 if (postBody != null) {
                     // Prepare output. There is no need to set Content-Length explicitly,
@@ -257,8 +259,7 @@ public class HurlStack implements HttpStack {
                     // output stream.
                     connection.setDoOutput(true);
                     connection.setRequestMethod("POST");
-                    connection.addRequestProperty(HEADER_CONTENT_TYPE,
-                            request.getPostBodyContentType());
+                    connection.addRequestProperty(HEADER_CONTENT_TYPE, request.getPostBodyContentType());
                     DataOutputStream out = new DataOutputStream(connection.getOutputStream());
                     out.write(postBody);
                     out.close();
