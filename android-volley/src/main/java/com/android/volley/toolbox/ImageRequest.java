@@ -36,16 +36,19 @@ import com.android.volley.VolleyLog;
 public class ImageRequest extends Request<Bitmap> {
     /**
      * Socket timeout in milliseconds for image requests
+     * 超时时间：1s
      */
     private static final int IMAGE_TIMEOUT_MS = 1000;
 
     /**
      * Default number of retries for image requests
+     * 最大的请求次数：2次
      */
     private static final int IMAGE_MAX_RETRIES = 2;
 
     /**
      * Default backoff multiplier for image requests
+     * 发生冲突时的重传延迟增加数：2f（这个应该和TCP协议有关，冲突时需要退避一段时间，然后再次请求）
      */
     private static final float IMAGE_BACKOFF_MULT = 2f;
     /**
@@ -65,6 +68,7 @@ public class ImageRequest extends Request<Bitmap> {
 
     /**
      * Decoding lock so that we don't decode more than one image at a time (to avoid OOM's)
+     * 一次只能对一个图片进行编码，加载，避免OOM的发生
      */
     private static final Object sDecodeLock = new Object();
 
@@ -127,8 +131,7 @@ public class ImageRequest extends Request<Bitmap> {
      * @param actualSecondary Actual size of the secondary dimension
      * @param scaleType       The ScaleType used to calculate the needed image size.
      */
-    private static int getResizedDimension(int maxPrimary, int maxSecondary, int actualPrimary,
-                                           int actualSecondary, ScaleType scaleType) {
+    private static int getResizedDimension(int maxPrimary, int maxSecondary, int actualPrimary, int actualSecondary, ScaleType scaleType) {
 
         // If no dominant value at all, just return the actual.
         if ((maxPrimary == 0) && (maxSecondary == 0)) {
@@ -173,7 +176,7 @@ public class ImageRequest extends Request<Bitmap> {
     @Override
     protected Response<Bitmap> parseNetworkResponse(NetworkResponse response) {
         // Serialize all decode on a global lock to reduce concurrent heap usage.
-        synchronized (sDecodeLock) {
+        synchronized (sDecodeLock) { //一次只能对一个图片进行编码，加载，避免OOM的发生
             try {
                 return doParse(response);
             } catch (OutOfMemoryError e) {
@@ -191,38 +194,37 @@ public class ImageRequest extends Request<Bitmap> {
         BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
         Bitmap bitmap = null;
 
-        //如果mMaxWidth，mMaxHeight都为0，则保持位图的原始尺寸，
-        // 如果其中一个不为0，则按照原始位图的宽高比进行解码，如果都不为0， 则将解码成最适合width x height区域并且保持原始位图宽高比的位图。
+        // 如果mMaxWidth和mMaxHeight都为0，则按照bitmap实际大小进行decode
         if (mMaxWidth == 0 && mMaxHeight == 0) {
             decodeOptions.inPreferredConfig = mDecodeConfig;
             bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
         } else {
+            // 如果其中一个不为0，则按照原始位图的宽高比进行解码，如果都不为0， 则将解码成最适合width x height区域并且保持原始位图宽高比的位图。
+
             // If we have to resize this image, first get the natural bounds.
+            // 1. 先decode一次，求出图片的实际大小
             decodeOptions.inJustDecodeBounds = true;
             BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
             int actualWidth = decodeOptions.outWidth;
             int actualHeight = decodeOptions.outHeight;
 
             // Then compute the dimensions we would ideally like to decode to.
-            int desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight,
-                    actualWidth, actualHeight, mScaleType);
-            int desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth,
-                    actualHeight, actualWidth, mScaleType);
+            // 2. 求出根据给定的参数的目标宽度和长度
+            int desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight, actualWidth, actualHeight, mScaleType); //宽度缩放
+            int desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth, actualHeight, actualWidth, mScaleType); //高度缩放
 
             // Decode to the nearest power of two scaling factor.
             decodeOptions.inJustDecodeBounds = false;
             // TODO(ficus): Do we need this or is it okay since API 8 doesn't support it?
             // decodeOptions.inPreferQualityOverSpeed = PREFER_QUALITY_OVER_SPEED;
-            decodeOptions.inSampleSize =
-                    findBestSampleSize(actualWidth, actualHeight, desiredWidth, desiredHeight);
-            Bitmap tempBitmap =
-                    BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
+            // 3. 根据实际大小和所需大小去找到一个最合适的大小
+            decodeOptions.inSampleSize = findBestSampleSize(actualWidth, actualHeight, desiredWidth, desiredHeight);
+            Bitmap tempBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
 
             // If necessary, scale down to the maximal acceptable size.
-            if (tempBitmap != null && (tempBitmap.getWidth() > desiredWidth ||
-                    tempBitmap.getHeight() > desiredHeight)) {
-                bitmap = Bitmap.createScaledBitmap(tempBitmap,
-                        desiredWidth, desiredHeight, true);
+            // 如果通过上述缩放后图片的大小仍然比所需大小要大，那么按照所需大小进一步进行缩放
+            if (tempBitmap != null && (tempBitmap.getWidth() > desiredWidth || tempBitmap.getHeight() > desiredHeight)) {
+                bitmap = Bitmap.createScaledBitmap(tempBitmap, desiredWidth, desiredHeight, true);
                 tempBitmap.recycle();
             } else {
                 bitmap = tempBitmap;
@@ -232,6 +234,7 @@ public class ImageRequest extends Request<Bitmap> {
         if (bitmap == null) {
             return Response.error(new ParseError(response));
         } else {
+            // 最后将结果包装成Response返回给Delivery
             return Response.success(bitmap, HttpHeaderParser.parseCacheHeaders(response));
         }
     }
@@ -244,6 +247,7 @@ public class ImageRequest extends Request<Bitmap> {
     /**
      * Returns the largest power-of-two divisor for use in downscaling a bitmap
      * that will not result in the scaling past the desired dimensions.
+     * 查找最优大小
      *
      * @param actualWidth   Actual width of the bitmap
      * @param actualHeight  Actual height of the bitmap
