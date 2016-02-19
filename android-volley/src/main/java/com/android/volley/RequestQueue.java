@@ -72,7 +72,7 @@ public class RequestQueue {
     private final Map<String, Queue<Request<?>>> mWaitingRequests = new HashMap<String, Queue<Request<?>>>();
 
     /**
-     * 正在被请求队列处理的请求集合
+     * 正在被请求队列处理的请求集合,主要的作用，用于取消请求
      * <p/>
      * The set of all requests currently being processed by this RequestQueue. A Request
      * will be in this set if it is waiting in any queue or currently being processed by
@@ -136,8 +136,7 @@ public class RequestQueue {
      */
     private CacheDispatcher mCacheDispatcher;
 
-    private List<RequestFinishedListener> mFinishedListeners =
-            new ArrayList<RequestFinishedListener>();
+    private List<RequestFinishedListener> mFinishedListeners = new ArrayList<RequestFinishedListener>();
 
     /**
      * Creates the worker pool. Processing will not begin until {@link #start()} is called.
@@ -147,8 +146,7 @@ public class RequestQueue {
      * @param threadPoolSize Number of network dispatcher threads to create
      * @param delivery       A ResponseDelivery interface for posting responses and errors
      */
-    public RequestQueue(Cache cache, Network network, int threadPoolSize,
-                        ResponseDelivery delivery) {
+    public RequestQueue(Cache cache, Network network, int threadPoolSize, ResponseDelivery delivery) {
         mCache = cache;
         mNetwork = network;
         mDispatchers = new NetworkDispatcher[threadPoolSize];
@@ -182,9 +180,8 @@ public class RequestQueue {
      * 启动所有调度器线程
      */
     public void start() {
+        //终止所有调度器线程
         stop();  // Make sure any currently running dispatchers are stopped.
-
-        //缓存请求线程调度和网络请求线程调度
 
         // Create the cache dispatcher and start it.
         // 缓存调度器

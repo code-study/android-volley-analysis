@@ -669,6 +669,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         return left == right ?
                 this.mSequence - other.mSequence :
                 right.ordinal() - left.ordinal();
+
+        //ordinal():回此枚举常量的序数,从0开始，下标
     }
 
     @Override
