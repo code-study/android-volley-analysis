@@ -73,9 +73,7 @@ public class CacheDispatcher extends Thread {
      * @param cache        Cache interface to use for resolution
      * @param delivery     Delivery interface to use for posting responses
      */
-    public CacheDispatcher(
-            BlockingQueue<Request<?>> cacheQueue, BlockingQueue<Request<?>> networkQueue,
-            Cache cache, ResponseDelivery delivery) {
+    public CacheDispatcher(BlockingQueue<Request<?>> cacheQueue, BlockingQueue<Request<?>> networkQueue, Cache cache, ResponseDelivery delivery) {
         mCacheQueue = cacheQueue;
         mNetworkQueue = networkQueue;
         mCache = cache;
