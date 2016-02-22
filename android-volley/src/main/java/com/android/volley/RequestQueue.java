@@ -120,7 +120,7 @@ public class RequestQueue {
 
     /**
      * Response delivery mechanism.
-     * 用于分发响应
+     * 用于分发响应结果
      */
     private final ResponseDelivery mDelivery;
 
@@ -199,7 +199,7 @@ public class RequestQueue {
 
     /**
      * Stops the cache and network dispatchers.
-     * 终止所有调度器线程
+     * 停止所有调度器线程
      */
     public void stop() {
         if (mCacheDispatcher != null) {
@@ -277,29 +277,29 @@ public class RequestQueue {
         // Tag the request as belonging to this queue and add it to the set of current requests.
         request.setRequestQueue(this); //为Request设置请求队列
 
+        //将请求add到当前请求队列中
         synchronized (mCurrentRequests) {
-            //将请求放入到正在执行的请求队列中
             mCurrentRequests.add(request);
         }
 
         // Process requests in the order they are added.
-        //为请求设置一个唯一的序列号
+        //设置唯一的序列号
         request.setSequence(getSequenceNumber());
         request.addMarker("add-to-queue");
 
         // If the request is uncacheable, skip the cache queue and go straight to the network.
         if (!request.shouldCache()) {
-            //不允许缓存，则直接提交网络请求
+            //不缓存，跳过缓存队列直接请求数据
             mNetworkQueue.add(request);
             return request;
         }
 
         // Insert request into stage if there's already a request with the same cache key in flight.
-        //允许被缓存,首先判断是否有同样的缓存请求在这个队列当中
+        //缓存,首先判断是否有相同请求正在处理
         synchronized (mWaitingRequests) {
             String cacheKey = request.getCacheKey();
 
-            //如果请求队列中有正在处理与之相同的请求，那么直接将其加入相同请求的等待队列当中
+            //有相同请求正在处理
             if (mWaitingRequests.containsKey(cacheKey)) {
                 // There is already a request in flight. Queue up.
                 Queue<Request<?>> stagedRequests = mWaitingRequests.get(cacheKey);
@@ -307,15 +307,17 @@ public class RequestQueue {
                     stagedRequests = new LinkedList<Request<?>>();
                 }
                 stagedRequests.add(request);
+                //处理等待队列空数据,加入到等待队列
                 mWaitingRequests.put(cacheKey, stagedRequests);
+
                 if (VolleyLog.DEBUG) {
                     VolleyLog.v("Request for cacheKey=%s is in flight, putting on hold.", cacheKey);
                 }
             } else {
-                //否则的话，新建一个与这个请求相同的等待队列，并且将这次请求放入到缓存队列当中
                 // Insert 'null' queue for this cacheKey, indicating there is now a request in
                 // flight.
-                mWaitingRequests.put(cacheKey, null);//这里传递空值，当再次回调这个函数的时候，就会调用if中的函数，从而完成队列的创建
+                // 创建新的等待当前请求的空队列添加到当前请求缓存队列中
+                mWaitingRequests.put(cacheKey, null);
                 mCacheQueue.add(request);
             }
             return request;
@@ -347,10 +349,11 @@ public class RequestQueue {
                 String cacheKey = request.getCacheKey();
                 Queue<Request<?>> waitingRequests = mWaitingRequests.remove(cacheKey);
                 if (waitingRequests != null) {
+
                     if (VolleyLog.DEBUG) {
-                        VolleyLog.v("Releasing %d waiting requests for cacheKey=%s.",
-                                waitingRequests.size(), cacheKey);
+                        VolleyLog.v("Releasing %d waiting requests for cacheKey=%s.", waitingRequests.size(), cacheKey);
                     }
+
                     // Process all queued up requests. They won't be considered as in flight, but
                     // that's not a problem as the cache has been primed by 'request'.
                     mCacheQueue.addAll(waitingRequests);

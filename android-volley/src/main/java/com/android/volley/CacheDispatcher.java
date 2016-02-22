@@ -120,7 +120,7 @@ public class CacheDispatcher extends Thread {
                 request.addMarker("cache-queue-take");
 
                 // If the request has been canceled, don't bother dispatching it.
-                // 请求被取消了，继续进行下一个
+                // 取消请求
                 if (request.isCanceled()) {
                     request.finish("cache-discard-canceled");
                     continue;
@@ -131,7 +131,7 @@ public class CacheDispatcher extends Thread {
 
                 //缓存已过期（包括expired与Soft-expired）
 
-                //没有缓存，则将请求加入mNetworkQueue队列中来进行一次网络访问
+                // 无缓存数据，则加入网络请求
                 if (entry == null) {
                     request.addMarker("cache-miss");
                     // Cache miss; send off to the network dispatcher.
@@ -140,8 +140,7 @@ public class CacheDispatcher extends Thread {
                 }
 
                 // If it is completely expired, just send it to the network.
-                // 缓存了，但是过期了，则将请求加入mNetworkQueue队列中来进行一次网络访问
-                // 判断缓存的新鲜度
+                // 判断缓存的新鲜度,过期了，加入网络请求
                 if (entry.isExpired()) {
                     request.addMarker("cache-hit-expired");
                     request.setCacheEntry(entry);

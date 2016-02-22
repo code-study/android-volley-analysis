@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 //                request("http://www.baidu.com");
-                request("https://git.oschina.net/login");
+                request("http://192.168.10.118:9081/oauth/oauth2/token?grant_type=client_credential&client_id=0NFV4NwLdxzbqelR47eEOH&client_secret=27DLx37XhaQ7roHPt3EaOP");
 //                request("http://openapi.weshare12.com/api/v1/weshare/resort/photos");
             }
         });
