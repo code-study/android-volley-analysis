@@ -75,8 +75,10 @@ public class Volley {
             }
         }
 
+        // 封装请求
         Network network = new BasicNetwork(stack);
 
+        //创建请求队列
         RequestQueue queue;
         if (maxDiskCacheBytes <= -1) {
             // No maximum size specified
