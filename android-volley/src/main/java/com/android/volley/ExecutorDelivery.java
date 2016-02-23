@@ -132,7 +132,7 @@ public class ExecutorDelivery implements ResponseDelivery {
                 mRequest.addMarker("intermediate-response");
             } else {
                 //请求结束
-                mRequest.finish("done");
+                mRequest.finish("done");                            
             }
 
             // If we have been provided a post-delivery runnable, run it.
